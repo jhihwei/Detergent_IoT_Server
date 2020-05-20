@@ -20,7 +20,7 @@ import time
 import json
 from Data_Format import Data_Format
 
-class Sales():
+class Terminal_info():
 
     def __init__(self):    
         self.conn = psycopg2.connect(database=str(os.getenv('DB')), user=str(os.getenv('DB_ACC')),
@@ -28,7 +28,7 @@ class Sales():
         print("Opened database successfully")
         self.cur = self.conn.cursor()
 
-        self.MQTT_TOPIC = [literal_eval(i.strip()) for i in os.getenv('TOPIC').split('|')]
+        self.MQTT_TOPIC = [literal_eval(i.strip()) for i in os.getenv('TOPIC_SYSTEM_INFO').split('|')]
         client_uniq = "pubclient_"+str(random.randint(1, 10000))
         self.mqttclient = mqtt.Client(client_uniq, False)  # nocleanstart
         self.mqttclient.connect(os.getenv('SERVER_IP'), 1883, 60)
@@ -48,16 +48,18 @@ class Sales():
     def on_message(self, client, userdata, message):
         #將byte轉換成json
         data = json.loads(message.payload)
-        sales_data = data['value'].split(',')[:-1]
+        terminal_info = data['value'].split(',')
+        cpu_tmp = terminal_info[0]
+        mem = terminal_info[1]
+        cpu_load = terminal_info[2]
+        disk = terminal_info[3]
         terminal_id = data['terminal_id']
         timestamp = data['time']
         try:
-            d_format = Data_Format()
-            total_flow, gross_income, flow, income, receipt = d_format.extract_data(sales_data)
-            print(total_flow, gross_income, flow, income, receipt)
-            self.cur.execute(f"INSERT INTO sales (total_flow, gross_income, flow, income, receipt, terminal_id, timestamp) \
-                    VALUES ({total_flow}, {gross_income}, {flow}, {income}, {receipt}, '{terminal_id}', '{timestamp}')")
+            self.cur.execute(f"INSERT INTO terminal_info (cpu_tmp, mem, cpu_load, disk_free,  terminal_id, timestamp) \
+                    VALUES ({cpu_tmp}, {mem},{cpu_load}, {disk}, '{terminal_id}','{timestamp}')")
             self.conn.commit()
+            print(cpu_tmp, mem)
         except Exception as e:
             print(e)
 
@@ -65,5 +67,5 @@ class Sales():
         pass
 
 if __name__ == '__main__':
-    salse = Sales()
-    salse.mqttclient.loop_forever()
+    terminal_info = Terminal_info()
+    terminal_info.mqttclient.loop_forever()
