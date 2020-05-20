@@ -18,7 +18,7 @@ import psycopg2
 import random
 import time
 import json
-from pandas.core.frame import DataFrame
+from Data_Format import Data_Format
 
 class Sales():
 
@@ -50,33 +50,16 @@ class Sales():
         data = json.loads(message.payload)
         sales_data = data['value'].split(',')[:-1]
         terminal_id = data['terminal_id']
+        timestamp = data['time']
         try:
-            total_flow, gross_income, flow, income, receipt = self.extract_data(sales_data)
+            d_format = Data_Format()
+            total_flow, gross_income, flow, income, receipt = d_format.extract_data(sales_data)
             print(total_flow, gross_income, flow, income, receipt)
-            self.cur.execute(f"INSERT INTO sales (total_flow, gross_income, flow, income, receipt, terminal_id) \
-                    VALUES ({total_flow}, {gross_income}, {flow}, {income}, {receipt}, '{terminal_id}')")
+            self.cur.execute(f"INSERT INTO sales (total_flow, gross_income, flow, income, receipt, terminal_id, timestamp) \
+                    VALUES ({total_flow}, {gross_income}, {flow}, {income}, {receipt}, '{terminal_id}', '{timestamp}')")
             self.conn.commit()
         except Exception as e:
             print(e)
-
-
-    def extract_data(self, d):
-        total_flow = f'{self.fix_number(d[5])}{self.fix_number(d[4])}{self.fix_number(d[3])}{self.fix_number(d[2])}{self.fix_number(d[1])}'
-        gross_income = f'{self.fix_number(d[10])}{self.fix_number(d[9])}{self.fix_number(d[8])}{self.fix_number(d[7])}{self.fix_number(d[6])}'
-        flow = f'{self.fix_number(d[15])}{self.fix_number(d[14])}{self.fix_number(d[13])}{self.fix_number(d[12])}{self.fix_number(d[11])}'
-        income = f'{self.fix_number(d[20])}{self.fix_number(d[19])}{self.fix_number(d[18])}{self.fix_number(d[17])}{self.fix_number(d[16])}'
-        receipt = f'{self.fix_number(d[25])}{self.fix_number(d[24])}{self.fix_number(d[23])}{self.fix_number(d[22])}{self.fix_number(d[21])}'
-
-        return int(total_flow), int(gross_income), int(flow), int(income), int(receipt)
-
-    def fix_number(self, number):
-        number = int(number, 16)
-        if number == 0:
-            return '00'
-        elif number < 10:
-            return f'0{number}'
-        else:
-            return number
 
     def start(self):
         pass
