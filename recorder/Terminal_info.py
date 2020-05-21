@@ -22,14 +22,16 @@ from Data_Format import Data_Format
 
 class Terminal_info():
 
-    def __init__(self):    
+    def __init__(self):
+        #連結資料庫    
         self.conn = psycopg2.connect(database=str(os.getenv('DB')), user=str(os.getenv('DB_ACC')),
                                 password=str(os.getenv('DB_PWD')), host=str(os.getenv('SERVER_IP')), port=str(os.getenv('DB_PORT')))
         print("Opened database successfully")
         self.cur = self.conn.cursor()
-
+        #讀取.ENV裡以字串型態表示的LIST，並轉換回LIST型態
         self.MQTT_TOPIC = [literal_eval(i.strip()) for i in os.getenv('TOPIC_SYSTEM_INFO').split('|')]
         client_uniq = "pubclient_"+str(random.randint(1, 10000))
+        #設定MQTT並連結
         self.mqttclient = mqtt.Client(client_uniq, False)  # nocleanstart
         self.mqttclient.connect(os.getenv('SERVER_IP'), 1883, 60)
         self.mqttclient.on_message = self.on_message
